@@ -1,0 +1,433 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage{geometry}
+\usepackage{setspace}
+\usepackage{csquotes}
+\usepackage[backend=biber,style=apa]{biblatex}
+\usepackage{longtable}
+\usepackage{booktabs} % Para \toprule, \midrule, \bottomrule
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{fontspec}
+\setmainfont{Times New Roman}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{tipa} % soporte IPA
+
+\addbibresource{referencias.bib}
+
+%title
+\title{\textbf{NLP Informe: Taller de la Ley de Zipf}}
+
+
+%authors
+\author{
+  Aponte Duque, Juan \\
+  \texttt{aponte.juan@javeriana.edu.co}
+  \and
+  Cardozo Amin, Cristian\\
+  \texttt{cristiancardozo@javeriana.edu.co}
+  \and
+  Triana Ocampo, Benkos\\
+  \texttt{b.triana@javeriana.edu.co}  
+}
+
+%date
+\date{\today}
+
+%Inicio documento
+\begin{document}
+\maketitle
+
+%Abstract
+\begin{abstract}
+La Ley de Zipf es un patrón estadístico que aparece en cualquier idioma. De forma sencilla, establece que la segunda palabra más frecuente en un texto aparecerá aproximadamente con la mitad de la frecuencia de la primera; la tercera, con un tercio; y así sucesivamente, hasta que la palabra enésima aparezca con una frecuencia cercana a $1/n$ de la más frecuente.\parencite{wikipediaZipf} 
+
+En este trabajo buscamos comprobar esta ley en un conjunto de canciones en español. Además, analizamos cómo varían los resultados al incorporar aspectos de fonética y fonología al análisis, evaluando si la relación propuesta por la Ley de Zipf se mantiene o se modifica, y observando el comportamiento de la distribución de las palabras bajo estas condiciones adicionales.
+\end{abstract}
+
+
+\section{Introducción}
+
+La \textbf{Ley de Zipf} establece que, si ordenamos las palabras de un texto de mayor a menor frecuencia, la segunda palabra más usada aparecerá aproximadamente la mitad de veces que la primera, la tercera un tercio, y así sucesivamente. Este patrón se observa en distintos tipos de textos, como libros, discursos y, por supuesto, canciones.
+
+Las letras de canciones son un caso interesante para analizar esta ley, ya que suelen contener repeticiones frecuentes: coros, frases cortas, e incluso sonidos no léxicos como ``ay'' u ``oh''. Estas características las convierten en un buen material para observar y poner a prueba la relación propuesta por Zipf.
+
+\textbf{Objetivos del taller:}
+\begin{enumerate}
+    \item Probar diferentes métodos de segmentación de palabras.
+    \item Contar las palabras y calcular su frecuencia de aparición.
+\end{enumerate}
+
+\section{Datos y fuentes}
+Para este taller, se recogió una muestra de canciones populares en Colombia, seleccionando una por cada año, desde 1945 hasta 2025, siempre que fuera posible. La elección priorizó la canción más reconocida o significativa del año. En los casos en que la letra no estaba disponible, se omitió ese año.
+
+Toda la información se organizó en una excel, con columnas para \textit{año}, \textit{título}, \textit{artista}, \textit{género} y \textit{letra}. Para ello, se consultaron tres fuentes principales: 
+
+\begin{itemize}
+    \item \textbf{Las 50 mejores canciones de Colombia}, lista publicada por el diario \textit{El Tiempo} \parencite{eltiempoCanciones}.
+    \item \textbf{Radio Nacional de Colombia: 80 años en 80 canciones}, recopilación oficial de la emisora \parencite{radionacionalCanciones}.
+    \item El video \textbf{FULANITOVIAJERO – Periodista Musical}, que analiza la historia musical del país \parencite{fulanitoviajeroVideo}.
+\end{itemize}
+
+El resultado es un listado diverso que abarca multiples géneros —porro, cumbia, bambuco, salsa, vallenato, balada, rock, pop, reggeton, entre otros— y refleja tanto la evolución de la música colombiana como las tendencias de cada época. Esta variedad permite analizar si la Ley de Zipf se cumple en estilos musicales distintos y cómo la repetición de ciertos géneros puede influir en la distribución de frecuencias de las palabras.
+
+La lista completa de canciones seleccionadas, organizada por año, género, título y artista, se se incluye en el \textbf{Apéndice~\ref{appendix:canciones}}.
+
+\subsection{Distribución de géneros}
+
+Para entender mejor la muestra, calculamos la distribución de géneros musical. La Figura~\ref{fig:generos} resume la proporción de cada género dentro del conjunto.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\linewidth]{images/generos}
+    \caption{Distribución de géneros.}
+    \label{fig:generos}
+\end{figure}
+
+\section{Análisis léxico y validación de la Ley de Zipf}
+
+En esta etapa, el objetivo principal es comprobar si las letras de las canciones cumplen el patrón descrito por la Ley de Zipf. Para ello, se realiza un análisis léxico que incluye:
+
+\begin{enumerate}
+    \item \textbf{Tokenización:} dividir el texto de cada canción en palabras o tokens individuales.
+    \item \textbf{Conteo de frecuencias:} calcular cuántas veces aparece cada token en las canciones.
+    \item \textbf{Visualización:} graficar la relación entre la posición en el ranking y la frecuencia de aparición.
+\end{enumerate}
+
+\subsection{Opciones de tokenización evaluadas}
+
+Para la división del texto en tokens, se probaron distintas herramientas y enfoques:
+
+\begin{itemize}
+    \item \textbf{Spanish + NLTK:} tokenizador en español incluido en NLTK.
+    \item \textbf{TweetTokenizer:} diseñado para textos cortos y redes sociales, capaz de manejar emoticonos y símbolos especiales.
+    \item \textbf{BERT (base):} tokenizador de un modelo de lenguaje general entrenado en múltiples idiomas.
+    \item \textbf{RoBERTa entrenado en corpus en español:} versión optimizada para el Español.
+\end{itemize}
+
+Tras las pruebas, se eligió el tokenizador en español de NLTK. La decisión se basó en que no modifica los tokens originales (lo que conserva la forma exacta de las palabras) y facilita la interpretación de los resultados.
+
+\subsection{Ejemplo comparativo de tokenización}
+
+Para ilustrar las diferencias, en la Tabla~\ref{tab:tokenizacion} se muestra un fragmento de la canción \textit{Colombia Tierra Querida} tokenizado con dos métodos: BERT y NLTK.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{p{0.45\linewidth} p{0.45\linewidth}}
+\toprule
+\textbf{BERT} & \textbf{NLTK (español)} \\
+\midrule
+\small
+[Colombia, ,, tier, \#\#ra, que, \#\#rida, ,, him, \#\#no, de] &
+\small
+[Colombia, ,, tierra, querida, ,, himno, de, fe, y, armonía] \\
+\small
+[f, \#\#e, y, arm, \#\#on, \#\#ía, ., Can, \#\#tem, \#\#os] &
+\small
+[., Cantemos, ,, cantemos, todos, grito, de, paz, y, alegría] \\
+\small
+[,, can, \#\#tem, \#\#os, to, \#\#dos, g, \#\#rito, de, p] &
+\small
+[., Vivemos, ,, siempre, vivimos, a, nuestra, patria, querida, .] \\
+\bottomrule
+\end{tabular}
+\caption{Comparación de tokenización de un fragmento con BERT y NLTK.}
+\label{tab:tokenizacion}
+\end{table}
+
+Como se observa, BERT tokeniza agregando el prefijo \texttt{\#\#} y dividiéndola en 2 la palabra, lo que genera una mayor fragmentación y requiere pasos adicionales para un análisis léxico. Por ejemplo, \textit{tierra} se divide en \textit{tier} y \textit{\#\#ra}, y \textit{querida} en \textit{que} y \textit{\#\#rida}. 
+
+En contraste, el tokenizador de NLTK conserva las palabras completas.
+
+\section{Frecuencia de palabras}
+
+En la Figura~\ref{fig:frecuencia_relativa} se muestra la frecuencia relativa de las 100 palabras más comunes. Se observa un patrón claro: unas pocas palabras concentran gran parte de las ocurrencias, mientras que la mayoría tienen frecuencias mucho menores.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\linewidth]{images/frecuencia_100_relativa}
+    \caption{Frecuencia relativa (\%) de las 100 palabras más comunes en el corpus.}
+    \label{fig:frecuencia_relativa}
+\end{figure}
+
+La Figura~\ref{fig:frecuencia_acumulada} presenta la frecuencia acumulada. 
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\linewidth]{images/frecuencia_100_acumulada}
+    \caption{Frecuencia acumulada (\%) de las 100 palabras más comunes en el corpus.}
+    \label{fig:frecuencia_acumulada}
+\end{figure}
+
+Este comportamiento es consistente con lo que predice la Ley de Zipf: un pequeño grupo de palabras domina el texto, mientras que la mayoría aparece de forma esporádica.
+
+\section{Validación de la Ley de Zipf}
+
+La Figura~\ref{fig:zipf_graph_1} presenta la relación entre el ranking y su frecuencia.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\linewidth]{images/zipf_graph_1}
+    \caption{Ranking y Frecuencia en escala log-log.}
+    \label{fig:zipf_graph_1}
+\end{figure}
+
+Dado que, las canciones siguen la Ley de Zipf, los puntos deberían alinearse aproximadamente formando una línea recta descendente en la escala log-log.
+
+\subsection{Frecuencia relativa sin \textit{stop words}}
+
+Se repitió el cálculo de frecuencias excluyendo las \textit{stop words}, es decir, aquellas palabras muy comunes y sin carga sematica (por ejemplo: \textit{el}, \textit{la}, \textit{de}, \textit{y}).
+
+La Figura~\ref{fig:frecuencia_sin_stopwords} muestra la frecuencia relativa de las 100 palabras más usadas después de aplicar esta limpieza.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{images/frecuencia_relativa_sin_stopwords}
+    \caption{Frecuencia relativa de las 100 palabras más comunes excluyendo \textit{stop words}.}
+    \label{fig:frecuencia_sin_stopwords}
+\end{figure}
+
+Tras eliminar las \textit{stop words}, la lista de palabras más frecuentes refleja mejor el contenido de las canciones, donde las palabras quiero, amor y vida son muy frecuentes. 
+
+\section{Análisis fonológico y fonético}
+
+Ahora bien, queremos ver las características sonoras de las letras. Para ello, cada palabra del conjunto de canciones fue transcrita fonéticamente utilizando el Alfabeto Fonético Internacional.
+
+Esto nos permite identificar patrones que no siempre son visibles en la escritura estándar. Mientras que el análisis léxico se centra en las unidades gráficas (palabras escritas), el análisis fonológico y fonético se centra en fonemas y sílabas. Este proceso lo vamos a realizar en varios pasosÑ 
+
+\begin{enumerate}
+    \item \textbf{Ejemplo de transcripción fonológica y fonética:} Utilizaremos una palabra de ejemplo para ver como es el funcionamiento de la librería \texttt{fonemas}.
+    \item \textbf{Conversión fonética:} uso de herramientas automáticas de transcripción a IPA para el español.
+    \item \textbf{Extracción de patrones:} identificación de repeticiones fonéticas, estructuras silábicas predominantes y posibles rimas internas.
+\end{enumerate}
+
+\subsection{Ejemplo de transcripción fonológica y fonética}
+Se utilizó como palabra de prueba \textit{esternocleidomastoideo}, un término largo y fonéticamente complejo. El resultado obtenido fue:
+
+\begin{itemize}
+    \item \textbf{Transcripción fonológica (palabra completa):} \texttt{['es\textfishhookr noklejdomastoj\textprimstress deo']}
+    \item \textbf{Transcripción fonética (palabra completa):} \texttt{['es\textfishhookr noklej\dh omastoj\textprimstress \dh eo']}
+    \item \textbf{Transcripción fonológica (sílabas):} \texttt{['es', 'te\textfishhookr', 'no', 'klej', 'do', 'mas', 'toj', '\textprimstress de', 'o']}
+    \item \textbf{Transcripción fonética (sílabas):} \texttt{['es', 'te\textfishhookr', 'no', 'klej', '\dh o', 'mas', 'toj', '\textprimstress \dh e', 'o']}
+\end{itemize}
+
+Este ejemplo permite visualizar:
+
+\begin{enumerate}
+    \item \textbf{Diferencias entre fonología y fonética:}  
+    La fonológica representa los sonidos básicos (fonemas) de la palabra, mientras que la fonética refleja la pronunciación real, incluyendo variaciones como el paso de [d] a [\dh].
+    
+    \item \textbf{Estructura silábica:}  
+    En las sílabas nos permite analizar la distribución de patrones sonoros, detectar secuencias frecuentes.
+\end{enumerate}
+
+\section{Frecuencia de fonemas y sílabas}
+
+Ahora bien, antes se realizo un proceso de limpieza para eliminar signos de puntuación y otros símbolos no lingüísticos (por ejemplo: \texttt{.}, \texttt{,}, \texttt{!}, \texttt{?}). Ademas, se quitaron removieron los \textit{stop words}.
+
+Con las transcripciones fonológicas y fonéticas obtenidas para todas la canciones, se calcularon las frecuencias relativas de los elementos básicos del habla: fonemas y sílabas.  
+
+El análisis se realizó de manera separada para:
+\begin{enumerate}
+    \item Fonemas fonológicos.
+    \item Fonemas fonéticos.
+    \item Sílabas fonológicas.
+    \item Sílabas fonéticas.
+\end{enumerate}
+
+\subsection{Fonemas fonológicos}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\linewidth]{images/frecuencia_fonemas_fonologicos}
+    \caption{Frecuencia relativa de fonemas fonológicos.}
+    \label{fig:freq_fonemas_fonologicos}
+\end{figure}
+
+\subsection{Fonemas fonéticos}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\linewidth]{images/frecuencia_fonemas_foneticos}
+    \caption{Frecuencia relativa de fonemas fonéticos.}
+    \label{fig:freq_fonemas_foneticos}
+\end{figure}
+
+\subsection{Sílabas fonológicas}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\linewidth]{images/frecuencia_silabas_fonologicas}
+    \caption{Frecuencia relativa de sílabas fonológicas.}
+    \label{fig:freq_silabas_fonologicas}
+\end{figure}
+
+\subsection{Sílabas fonéticas}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\linewidth]{images/frecuencia_silabas_foneticas}
+    \caption{Frecuencia relativa de sílabas fonéticas.}
+    \label{fig:freq_silabas_foneticas}
+\end{figure}
+
+Se observa que, igual que con las palabras, unas pocas unidades sonoras concentran la mayor parte de las apariciones. Esto confirma un patrón tipo Zipf también a nivel fonológico y fonético: pocos sonidos muy usados y muchos sonidos poco frecuentes.
+
+Además, ciertos fonemas aparecen asociados a varias palabras diferentes, muchas de ellas expresiones cortas típicas en canciones. Por ejemplo, el fonema \textipa{be} se encuentra en \textit{vé}, \textit{we}, \textit{be} y \textit{ve}; mientras que \textipa{u} aparece como \textit{uh}, \textit{uhh} y \textit{huh}.
+
+A modo de ejemplo, la siguiente tabla resume algunos de los fonemas más recurrentes y ejemplos de palabras asociadas:
+
+\begin{table}[H]
+\centering
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{fonología} & \textbf{palabras asociadas} & \textbf{numero de palabras} \\
+\midrule
+\textipa{be}                      & \textit{vé}, \textit{we}, \textit{be}, \textit{ve}        & 4 \\
+\textipa{u}                       & \textit{uh}, \textit{uhh}, \textit{huh}                   & 3 \\
+\textipa{aj}                      & \textit{ai}, \textit{ay}                                   & 2 \\
+\textipa{ej}                      & \textit{hey}, \textit{ey}                                  & 2 \\
+\textipa{\textprimstress solo}    & \textit{sólo}, \textit{solo}                               & 2 \\
+\textipa{te}                      & \textit{the}, \textit{t}                                   & 2 \\
+\textipa{tan}                     & \textit{tan}, \textit{than}                                & 2 \\
+\textipa{ma}                      & \textit{má}, \textit{ma}                                   & 2 \\
+\textipa{is}                      & \textit{is}, \textit{his}                                  & 2 \\
+\textipa{e}                       & \textit{eh}, \textit{ehh}                                  & 2 \\
+\textipa{ba}                      & \textit{wa}, \textit{va}                                   & 2 \\
+\textipa{de}                      & \textit{d}, \textit{dé}                                    & 2 \\
+\textipa{bjen}                    & \textit{bién}, \textit{bien}                               & 2 \\
+\textipa{bi}                      & \textit{ví}, \textit{vi}                                   & 2 \\
+\textipa{bas}                     & \textit{vas}, \textit{was}                                 & 2 \\
+\textipa{ban}                     & \textit{van}, \textit{wan}                                 & 2 \\
+\textipa{\textprimstress jEa}\footnotesize\,(aprox.) & \textit{yeah}, \textit{yeahhh}                             & 2 \\
+\bottomrule
+\end{tabular}
+\caption{Ejemplos de fonemas frecuentes y palabras asociadas.}
+\label{tab:fonemas_frecuentes}
+\end{table}
+
+
+\section{Análisis Textometrico}
+
+La \textbf{textometría} es el conjunto de métricas que nos permite describir un texto o un grupo de textos. Vamos a aplicar estas medidas al conjunto de canciones para obtener una visión más objetiva.
+
+Seleccionamos 7 métricas básicas:
+
+\begin{itemize}
+    \item \textbf{Fernández-Huerta:} índice de legibilidad adaptado al español; valores más altos indican que el texto es más fácil de leer \parencite{fernandez_huerta_wiki}.
+    \item \textbf{Gunning Fog:} estima los años de educación formal necesarios para comprender el texto; un valor alto indica mayor complejidad \parencite{gunning_fog_wiki}.
+    \item \textbf{Automated Readability Index (ARI):} calcula la dificultad del texto a partir de la longitud media de las palabras y oraciones; valores altos implican un mayor nivel léxico \parencite{ari_wiki}.
+    \item \textbf{SMOG Index:} diseñado para estimar el número de años de educación necesarios para entender un texto, especialmente útil en contextos de salud pública \parencite{smog_wiki}.
+    \item \textbf{Szigriszt-Pazos:} medida de legibilidad adaptada al español que considera la longitud media de las oraciones y de las palabras; valores altos indican mayor facilidad \parencite{szigriszt_pazos_wiki}.
+    \item \textbf{Gutiérrez de Polini:} evalúa la dificultad del texto considerando la media de sílabas por palabra; a mayor cantidad de sílabas, mayor complejidad \parencite{gutierrez_polini_wiki}.
+    \item \textbf{Crawford:} estima el nivel de comprensión necesario y la duración aproximada de lectura; útil para adaptar textos a diferentes audiencias \parencite{crawford_wiki}.
+\end{itemize}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\appendix
+\section{Listado de canciones seleccionadas}
+\label{appendix:canciones}
+
+A continuación, se presenta la lista completa de canciones utilizadas en este estudio, organizadas por año, género, título y artista.
+
+\begin{longtable}{llll}
+\toprule
+\textbf{Año} & \textbf{Género} & \textbf{Título} & \textbf{Artista} \\
+\midrule
+1945 & Porro & \textit{Se va el caimán} & José María Peñaranda \\
+1946 & Bambuco & \textit{Soy Colombiano} & Rafael Godoy (Garzón y Collazos) \\
+1947 & Rumba criolla & \textit{La loca Margarita} & Hermanas Garavito \\
+1948 & Cumbia & \textit{Navidad Negra} & Los Trovadores de Barú \\
+1949 & Foxtrot tropical & \textit{Pachito E’ché} & Alex Tovar (Lucho Bermúdez y su Orq.) \\
+1950 & Joropo & \textit{Ay si, si} & Luis Ariel Rey \\
+1951 & Bambuco & \textit{Los cisnes} & Garzón y Collazos \\
+1952 & Vallenato & \textit{Alicia la campesina} & Los Vallenatos del Magdalena \\
+1953 & Porro & \textit{El año viejo} & Crescencio Salcedo \\
+1954 & Porro & \textit{La múcura} & Lucho Bermúdez y Matilde Díaz \\
+1955 & Merecumbé & \textit{Cosita linda} & Pacho Galán \\
+1956 & Vallenato & \textit{Lirio rojo} & Calixto Ochoa \\
+1957 & Rumba criolla & \textit{Por vivir en Bogotá} & Hermanas Garavito \\
+1959 & Cumbia & \textit{El pescador} & José Barros (Los Trovadores de Barú) \\
+1960 & Cumbia & \textit{La piragua} & José Barros (Los Black Stars) \\
+1961 & Cumbia & \textit{La pollera colorá} & Wilson Choperena (Orq. de P. Salcedo) \\
+1962 & Porro & \textit{La paloma guarumera} & Los Corraleros de Majagual \\
+1963 & Vallenato & \textit{La casa en el aire} & Rafael Escalona (Bovea y sus Vallenatos) \\
+1964 & Currulao & \textit{A la mina no voy} & Leonor González Mina \\
+1965 & Bambuco & \textit{Pueblito viejo} & Garzón y Collazos \\
+1966 & Nueva ola & \textit{Llorando estoy} & Vicky (Esperanza Acevedo) \\
+1967 & Cumbia & \textit{La piragua} & Gabriel Romero \& Los Black Stars \\
+1968 & Vallenato & \textit{Pedazo de acordeón} & Alejo Durán \\
+1969 & Currulao & \textit{Mi Buenaventura} & Peregoyo y su Combo Vacaná \\
+1970 & Balada & \textit{Llévame contigo} & Claudia de Colombia \\
+1971 & Cumbia & \textit{Los sabanales} & Los Corraleros de Majagual (Calixto Ochoa) \\
+1972 & Balada pop & \textit{Alguien cantó una canción} & Billy Pontoni \\
+1973 & Salsa & \textit{La sirena} & Nelson y Sus Estrellas \\
+1974 & Salsa & \textit{Las caleñas son como las flores} & The Latin Brothers (Joe Arroyo) \\
+1975 & Salsa & \textit{El preso} & Fruko y Sus Tesos \\
+1976 & Vallenato & \textit{La creciente} & Binomio de Oro de América \\
+1977 & Balada & \textit{Llamarada} & Isadora (Fernanda Bustos) \\
+1978 & Bolero & \textit{María de los guardias} & Helenita Vargas \\
+1979 & Cumbia tropical & \textit{Cariñito} & Rodolfo Aicardi \\
+1980 & Carranga & \textit{La cucharita} & Jorge Velosa y Los Carrangueros \\
+1981 & Joropo & \textit{Ay mi llanura} & Arnulfo Briceño \\
+1982 & Vallenato & \textit{Todo es para ti} & Diomedes Díaz \\
+1983 & Cumbia & \textit{Golpe con golpe} & Pastor López \\
+1984 & Salsa & \textit{Cali pachanguero} & Grupo Niche \\
+1985 & Balada & \textit{¿Dónde estará mi primavera?} & Raúl Santi \\
+1986 & Salsa & \textit{Rebelión} & Joe Arroyo y La Verdad \\
+1987 & Balada & \textit{Como un picaflor} & Raúl Santi \\
+1988 & Rock & \textit{La calle} & Compañía Ilimitada \\
+1989 & Balada & \textit{La causa nacional} & Sociedad Anónima \\
+1990 & Salsa & \textit{Una aventura} & Grupo Niche \\
+1991 & Cumbia & \textit{Colombia tierra querida} & Lucho Bermúdez \& Matilde Díaz \\
+1993 & Vallenato fusión & \textit{La gota fría} & Carlos Vives \\
+1994 & Vallenato & \textit{El santo cachón} & Los Embajadores Vallenatos \\
+1995 & Pop latino & \textit{Estoy aquí} & Shakira \\
+1996 & Jazz-folk & \textit{Los caminos de la vida} & Los Diablitos (Omar Geles) \\
+1997 & Tropipop & \textit{La tierra del olvido} & Carlos Vives \\
+1998 & Rock & \textit{Florecita rockera} & Aterciopelados \\
+1999 & Pop & \textit{Me voy} & Andrés Cepeda \\
+2000 & Rock & \textit{Fíjate bien} & Juanes \\
+2001 & Pop & \textit{Suerte (Whenever, Wherever)} & Shakira \\
+2002 & Rock & \textit{A Dios le pido} & Juanes \\
+2004 & Salsa & \textit{La pantera mambo} & La 33 \\
+2005 & Pop & \textit{La camisa negra} & Juanes \\
+2007 & Hip-hop & \textit{Somos pacífico} & ChocQuibTown \\
+2008 & Electro-cumbia & \textit{Fuego} & Bomba Estéreo \\
+2009 & Electro-folk & \textit{Mi Kolombia} & Systema Solar \\
+2010 & Pop & \textit{Waka Waka} & Shakira (ft. Freshlyground) \\
+2011 & Hip-hop & \textit{Chocolate} & Profetas \\
+2012 & Swing & \textit{Suín Romanticón} & Monsieur Periné \\
+2013 & vallenato & \textit{Volví a nacer} & Carlos Vives \\
+2014 & Reguetón & \textit{6 AM} & J Balvin (ft. Farruko) \\
+2015 & Reguetón & \textit{Ginza} & J Balvin \\
+2016 & Vallenato & \textit{La bicicleta} & Carlos Vives \& Shakira \\
+2017 & Reguetón & \textit{Mi gente} & J Balvin \& Willy William \\
+2018 & Reguetón & \textit{Mi cama} & Karol G \\
+2019 & Reguetón & \textit{Tusa} & Karol G (ft. Nicki Minaj) \\
+2020 & Reguetón & \textit{Hawái} & Maluma \\
+2021 & Reguetón & \textit{Bichota} & Karol G \\
+2022 & Reguetón & \textit{Provenza} & Karol G \\
+2023 & Reguetón & \textit{TQG (Te Quedó Grande)} & Karol G \& Shakira \\
+2024 & Reguetón & \textit{LUNA} & ATL Jacob \& Feid \\
+2025 & Pop & \textit{Enamorarte Mil Veces} & Fonseca \& Manuel Medrano \\
+\bottomrule
+\end{longtable}
+
+\printbibliography
+
+\end{document}
